@@ -1,5 +1,9 @@
 # Healthcare Predictive MLOps
 
+> **⚠️ Trial Project** — For evaluation and demonstration purposes only.
+> Not licensed for production use, redistribution, or commercial deployment.
+> © 2026 wchen-dea. All rights reserved.
+
 End-to-end MLOps pipeline on Databricks for classifying patient test results
 (**Normal / Abnormal / Inconclusive**) using a Gradient Boosting model, Unity Catalog,
 MLflow, and Databricks Asset Bundles.
