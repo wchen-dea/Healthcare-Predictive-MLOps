@@ -1,0 +1,26 @@
+targets:
+  prod:
+    mode: production
+    workspace:
+      host: ${var.workspace_host}
+    permissions:
+    - service_principal_name: 0f463a87-f448-4454-90e7-d966e26ac397
+      level: CAN_MANAGE
+    # prod deploys the champion model inference only.
+    # Training/pipeline jobs are deployed but permanently paused.
+    variables:
+      env: prod
+      catalog: healthcare_catalog
+      schema: healthcare_ml
+      data_path: /Volumes/healthcare_catalog/healthcare_ml/raw/healthcare_dataset.csv
+      instance_profile_arn: arn:aws:iam::837259729388:instance-profile/dt-role-us-west-2-databricks-instance-profile-role-prd
+      job_cluster_name: job_cluster_mlops_prod
+      notification_email: paul.chen@discounttire.com
+      s3_external_storage: dt-prd-external
+      s3_managed_storage: dt-prd-dbx-managed
+      spark_version: 17.3.x-cpu-ml-scala2.13
+      cluster_node_type: m5.large
+      num_workers: "4"
+      policy_id:
+        lookup:
+          cluster_policy: dt-sbs-machine-learning-engineer-job-spot-prd

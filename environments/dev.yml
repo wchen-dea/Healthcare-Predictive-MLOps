@@ -1,0 +1,28 @@
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-baff2b7f-4402.cloud.databricks.com
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+    - user_name: paul.chen@discounttire.com
+      level: CAN_MANAGE
+    - service_principal_name: 0f463a87-f448-4454-90e7-d966e26ac397
+      level: CAN_MANAGE
+    variables:
+      env: dev
+      catalog: quickstart_catalog
+      schema: healthcare_ml
+      data_path: /Volumes/quickstart_catalog/healthcare_ml/raw/healthcare_dataset.csv
+      instance_profile_arn: arn:aws:iam::837259729388:instance-profile/dt-role-us-west-2-databricks-instance-profile-role-dev
+      job_cluster_name: job_cluster_mlops_dev
+      notification_email: paul.chen@discounttire.com
+      s3_external_storage: dt-dev-external
+      s3_managed_storage: dt-dev-dbx-managed
+      spark_version: 17.3.x-cpu-ml-scala2.13
+      cluster_node_type: m5.large
+      num_workers: "1"
+      policy_id:
+        lookup:
+          cluster_policy: dt-sbs-machine-learning-engineer-job-spot-dev

@@ -1,0 +1,111 @@
+name: CD
+
+on:
+  push:
+    branches: [prod]
+  release:
+    types: [published]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy to dev on every merge to main
+# Deploy to stg then prod on a published release/tag
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── Deploy: dev ─────────────────────────────────────────────────────────────
+  deploy-dev:
+    name: Deploy → dev
+    runs-on: ubuntu-latest
+    environment: dev
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0.230.0
+
+      - name: Deploy to dev
+        run: make cd-dev
+
+  # ── Deploy: stg (release only) ───────────────────────────────────────────────
+  deploy-stg:
+    name: Deploy → stg
+    if: github.event_name == 'release'
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: stg
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_STG }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_STG }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0.230.0
+
+      - name: Deploy to stg
+        run: make cd-stg
+
+  # ── Deploy: prod (release only, requires stg success) ────────────────────────
+  deploy-prod:
+    name: Deploy → prod
+    if: github.event_name == 'release'
+    needs: deploy-stg
+    runs-on: ubuntu-latest
+    environment: prod        # protected — requires manual approval in GitHub
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0.230.0
+
+      - name: Deploy to prod
+        run: make cd-prod

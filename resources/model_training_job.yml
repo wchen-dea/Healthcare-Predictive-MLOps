@@ -1,0 +1,62 @@
+resources:
+  jobs:
+    model_training_job:
+      name: "Healthcare - Model Training"
+      description: "Trains a classification model to predict patient test results (Normal/Abnormal/Inconclusive) using MLflow for experiment tracking and model registry."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: model-training
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: training_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: r5d.2xlarge
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 6
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: BATCH
+      tasks:
+      - task_key: train_model
+        description: "Train RandomForest classifier and log to MLflow"
+        job_cluster_key: training_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/03_model_training
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            experiment_name: /Shared/healthcare-predictive-mlops/${bundle.target}/test-result-classifier
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            n_estimators: "200"
+            max_depth: "10"
+      - task_key: evaluate_and_register
+        description: "Evaluate model quality and conditionally register to Unity Catalog"
+        depends_on:
+        - task_key: train_model
+        job_cluster_key: training_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/04_model_evaluation
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            min_accuracy_threshold: "0.75"
+            target_alias: challenger
+      schedule:
+        quartz_cron_expression: "0 0 4 ? * SUN"
+        timezone_id: UTC
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com
+        on_success:
+        - ${bundle.target}-alerts@example.com

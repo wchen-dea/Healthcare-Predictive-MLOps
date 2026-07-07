@@ -1,0 +1,54 @@
+resources:
+  jobs:
+    feature_engineering_job:
+      name: "Healthcare - Feature Engineering"
+      description: "Ingests raw healthcare CSV data, cleans and engineers features, writes to Delta tables in Unity Catalog."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: feature-engineering
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: feature_eng_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: r5d.2xlarge
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 6
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: BATCH
+      tasks:
+      - task_key: ingest_raw_data
+        description: "Load raw CSV into a Bronze Delta table"
+        job_cluster_key: feature_eng_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/01_ingest_raw_data
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            data_path: /Volumes/${var.catalog}/${var.schema}/raw/healthcare_dataset.csv
+      - task_key: feature_engineering
+        description: "Clean, encode and engineer features into Silver Delta table"
+        depends_on:
+        - task_key: ingest_raw_data
+        job_cluster_key: feature_eng_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/02_feature_engineering
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com

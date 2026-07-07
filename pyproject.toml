@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "healthcare-mlops"
+version = "0.1.0"
+description = "Healthcare Predictive MLOps pipeline for Databricks Asset Bundles"
+requires-python = ">=3.11"
+dependencies = [
+    "mlflow>=2.14",
+    "scikit-learn>=1.4",
+    "pandas>=2.0",
+    "pyarrow>=14.0",
+    "databricks-sdk>=0.20",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pyspark>=3.5",
+    "delta-spark>=3.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E402: imports not at top — expected in Databricks notebooks (cells run sequentially)
+# F821: undefined name — spark / dbutils / display are Databricks runtime injections
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.py" = ["E402", "F821"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"

@@ -1,0 +1,47 @@
+# ────────────────────────────────────────────────────────────────────────────
+# Databricks Asset Bundle — Healthcare Predictive MLOps
+# ────────────────────────────────────────────────────────────────────────────
+bundle:
+  name: healthcare-predictive-mlops
+  uuid: 8f8b2b0c-d93a-4ca2-85ec-2c7d677cb78e
+# ── Resource & environment manifests ────────────────────────────────────────
+include:
+- resources/*.yml
+- environments/*.yml
+# ── Variable declarations ────────────────────────────────────────────────────
+variables:
+  env:
+    description: The environment dev/qa/stg/prd
+  s3_external_storage:
+    description: s3 bucket for external table staorage
+  s3_managed_storage:
+    description: s3 bucket for managed table storage
+  job_cluster_name:
+    description: The job_cluster_name being used in the jobs
+  notification_email:
+    description: The email being used in the jobs
+  policy_id:
+    description: The cluster policy id to be used for job clusters
+  instance_profile_arn:
+    description: The AWS Instance Profile ARN assigned to Databricks
+  catalog:
+    description: Unity Catalog name
+    default: healthcare_catalog
+  schema:
+    description: Schema / database name inside the catalog
+    default: healthcare_ml
+  data_path:
+    description: Path to the raw healthcare dataset CSV file
+    default: /Volumes/healthcare_catalog/healthcare_ml/raw/healthcare_dataset.csv
+  cluster_node_type:
+    description: Worker node type for job clusters (AWS instance type)
+    default: m5.large
+  num_workers:
+    description: Number of worker nodes per job cluster
+    default: "2"
+  spark_version:
+    description: Databricks Runtime version for job clusters
+    default: 17.3.x-cpu-ml-scala2.13
+
+# ── Deployment targets ───────────────────────────────────────────────────────
+# Targets are defined in environments/*.yml and merged via the include above.

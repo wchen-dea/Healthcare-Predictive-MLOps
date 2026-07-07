@@ -1,0 +1,57 @@
+resources:
+  jobs:
+    batch_inference_job:
+      name: "Healthcare - Batch Inference"
+      description: "Loads the champion model from Unity Catalog Model Registry and scores new patient records, writing predictions to a Gold Delta table."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: batch-inference
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: inference_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: ${var.cluster_node_type}
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 6
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: BATCH
+      tasks:
+      - task_key: batch_predict
+        description: "Score new patient records with the champion model"
+        job_cluster_key: inference_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/05_batch_inference
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            model_alias: champion
+            output_table: patient_predictions
+      - task_key: data_quality_check
+        description: "Validate prediction output distributions and alert on drift"
+        depends_on:
+        - task_key: batch_predict
+        job_cluster_key: inference_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/06_data_quality
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            predictions_table: patient_predictions
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com

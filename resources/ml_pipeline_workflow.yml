@@ -1,0 +1,97 @@
+resources:
+  jobs:
+    ml_pipeline_workflow:
+      name: "Healthcare - Full ML Pipeline"
+      description: "End-to-end orchestration: feature engineering → model training → evaluation → batch inference."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: orchestration
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: pipeline_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: ${var.cluster_node_type}
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 6
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: BATCH
+      tasks:
+      - task_key: ingest_raw_data
+        job_cluster_key: pipeline_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/01_ingest_raw_data
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            data_path: /Volumes/${var.catalog}/${var.schema}/raw/healthcare_dataset.csv
+      - task_key: feature_engineering
+        depends_on:
+        - task_key: ingest_raw_data
+        job_cluster_key: pipeline_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/02_feature_engineering
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+      - task_key: train_model
+        depends_on:
+        - task_key: feature_engineering
+        job_cluster_key: pipeline_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/03_model_training
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            experiment_name: /Shared/healthcare-predictive-mlops/${bundle.target}/test-result-classifier
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+      - task_key: evaluate_and_register
+        depends_on:
+        - task_key: train_model
+        job_cluster_key: pipeline_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/04_model_evaluation
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            min_accuracy_threshold: "0.35"
+            target_alias: champion
+      - task_key: promote_to_champion
+        depends_on:
+        - task_key: evaluate_and_register
+        condition_task:
+          left: "{{tasks.evaluate_and_register.values.model_registered}}"
+          op: "EQUAL_TO"
+          right: "true"
+      - task_key: batch_inference
+        depends_on:
+        - task_key: promote_to_champion
+          outcome: "true"
+        job_cluster_key: pipeline_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/05_batch_inference
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            model_alias: champion
+            output_table: patient_predictions
+      schedule:
+        quartz_cron_expression: "0 0 1 ? * SUN"
+        timezone_id: UTC
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${var.notification_email}
+        on_success:
+        - ${var.notification_email}
