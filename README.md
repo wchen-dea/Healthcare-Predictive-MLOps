@@ -100,7 +100,7 @@ Per-environment overrides live in `environments/{dev,stg,prod}.yml`.
 | **Algorithm** | `GradientBoostingClassifier` (scikit-learn) |
 | **Features** | 4 numeric (`age`, `billing_amount`, `room_number`, `length_of_stay_days`, `admission_month`) + 6 one-hot encoded categoricals + `age_group` bucket |
 | **Target** | `test_result` — 3 classes: Normal / Abnormal / Inconclusive |
-| **Accuracy gate** | ≥ 0.35 (promotes to `champion` alias in Unity Catalog) |
+| **Accuracy gate** | ≥ 0.75 (promotes to `champion` alias in Unity Catalog) |
 | **Hyperparameters** | `n_estimators=200`, `max_depth=10`, `learning_rate=0.05`, `subsample=0.8` |
 
 > **Note on the dataset:** The bundled Kaggle Healthcare dataset has synthetically

@@ -64,7 +64,7 @@ resources:
             catalog: ${var.catalog}
             schema: ${var.schema}
             model_name: ${var.catalog}.${var.schema}.test_result_classifier
-            min_accuracy_threshold: "0.35"
+            min_accuracy_threshold: "0.75"
             target_alias: champion
       - task_key: promote_to_champion
         depends_on:
