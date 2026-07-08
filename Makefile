@@ -49,10 +49,10 @@ check: lint ## Alias for lint (used in CI)
 .PHONY: test test-cov
 
 test: ## Run unit tests
-	uv run pytest tests/
+	PYTHONPATH=src uv run --extra dev python -m pytest tests/
 
 test-cov: ## Run tests with coverage report
-	uv run pytest tests/ --cov=src/healthcare_mlops --cov-report=term-missing --cov-report=xml
+	PYTHONPATH=src uv run --extra dev python -m pytest tests/ --cov=src/healthcare_mlops --cov-report=term-missing --cov-report=xml
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data
@@ -99,7 +99,7 @@ deploy-prod: ## Deploy bundle to prod
 # ─────────────────────────────────────────────────────────────────────────────
 # Databricks Bundle — Run jobs
 # ─────────────────────────────────────────────────────────────────────────────
-.PHONY: run run-pipeline run-feature-engineering run-training run-inference
+.PHONY: run run-pipeline run-feature-engineering run-training run-inference run-streaming-inference run-stream-source-ingestion run-seed-bootstrap run-usecase-training
 
 run: ## Run ml_pipeline_workflow on TARGET (default: dev)
 	databricks bundle run -t $(TARGET) ml_pipeline_workflow
@@ -112,8 +112,20 @@ run-feature-engineering: ## Run feature_engineering_job on TARGET
 run-training: ## Run model_training_job on TARGET
 	databricks bundle run -t $(TARGET) model_training_job
 
+run-usecase-training: ## Run use_case_model_training_job on TARGET
+	databricks bundle run -t $(TARGET) use_case_model_training_job
+
 run-inference: ## Run batch_inference_job on TARGET
 	databricks bundle run -t $(TARGET) batch_inference_job
+
+run-streaming-inference: ## Run sepsis_streaming_inference_job on TARGET
+	databricks bundle run -t $(TARGET) sepsis_streaming_inference_job
+
+run-stream-source-ingestion: ## Run stream_source_ingestion_job on TARGET
+	databricks bundle run -t $(TARGET) stream_source_ingestion_job
+
+run-seed-bootstrap: ## Run seed_table_bootstrap_job on TARGET
+	databricks bundle run -t $(TARGET) seed_table_bootstrap_job
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Databricks Bundle — Destroy

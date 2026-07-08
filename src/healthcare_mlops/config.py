@@ -13,7 +13,10 @@ class HealthcareConfig:
     # Table names
     bronze_table: str = "bronze_patients"
     silver_table: str = "silver_patients_features"
+    synthetic_seed_table: str = "synthetic_sepsis_seed_features"
+    stream_source_table: str = "silver_patients_features_stream_source"
     gold_predictions_table: str = "patient_predictions"
+    gold_stream_predictions_table: str = "patient_sepsis_risk_stream"
 
     # MLflow
     experiment_name: str = "/Shared/healthcare-predictive-mlops/test-result-classifier"
@@ -50,6 +53,7 @@ class HealthcareConfig:
     })
 
     # Training
+    model_algorithm: str = "gradient_boosting"
     test_size: float = 0.2
     random_state: int = 42
     n_estimators: int = 200
@@ -69,5 +73,17 @@ class HealthcareConfig:
         return f"{self.catalog}.{self.schema}.{self.silver_table}"
 
     @property
+    def stream_source_full_name(self) -> str:
+        return f"{self.catalog}.{self.schema}.{self.stream_source_table}"
+
+    @property
+    def synthetic_seed_full_name(self) -> str:
+        return f"{self.catalog}.{self.schema}.{self.synthetic_seed_table}"
+
+    @property
     def gold_full_name(self) -> str:
         return f"{self.catalog}.{self.schema}.{self.gold_predictions_table}"
+
+    @property
+    def gold_stream_full_name(self) -> str:
+        return f"{self.catalog}.{self.schema}.{self.gold_stream_predictions_table}"

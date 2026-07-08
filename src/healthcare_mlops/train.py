@@ -40,17 +40,34 @@ class ModelTrainer:
             remainder="drop",
         )
 
-        clf = GradientBoostingClassifier(
-            n_estimators=self.config.n_estimators,
-            max_depth=self.config.max_depth,
-            learning_rate=0.05,
-            subsample=0.8,
-            random_state=self.config.random_state,
-        )
+        if self.config.model_algorithm == "random_forest":
+            clf = RandomForestClassifier(
+                n_estimators=self.config.n_estimators,
+                max_depth=self.config.max_depth,
+                random_state=self.config.random_state,
+                n_jobs=-1,
+            )
+        elif self.config.model_algorithm == "gradient_boosting":
+            clf = GradientBoostingClassifier(
+                n_estimators=self.config.n_estimators,
+                max_depth=self.config.max_depth,
+                learning_rate=0.05,
+                subsample=0.8,
+                random_state=self.config.random_state,
+            )
+        else:
+            raise ValueError(
+                "Unsupported model_algorithm. Use 'random_forest' or 'gradient_boosting'."
+            )
 
         return Pipeline(steps=[("preprocessor", preprocessor), ("classifier", clf)])
 
-    def train(self, silver_df: DataFrame, experiment_name: str) -> str:
+    def train(
+        self,
+        silver_df: DataFrame,
+        experiment_name: str,
+        registered_model_name: str | None = None,
+    ) -> str:
         """Train model, log to MLflow, return run_id."""
         pdf: pd.DataFrame = silver_df.toPandas()
 
@@ -75,13 +92,14 @@ class ModelTrainer:
             mlflow.set_tags(
                 {
                     "project": "healthcare-predictive-mlops",
-                    "model_type": "random_forest_classifier",
+                    "model_type": self.config.model_algorithm,
                     "target": self.config.label_column,
                 }
             )
 
             mlflow.log_params(
                 {
+                    "model_algorithm": self.config.model_algorithm,
                     "n_estimators": self.config.n_estimators,
                     "max_depth": self.config.max_depth,
                     "test_size": self.config.test_size,
@@ -99,12 +117,14 @@ class ModelTrainer:
 
             signature = infer_signature(X_train, pipeline.predict(X_train))
 
+            model_registry_name = registered_model_name or self.config.full_model_name
+
             mlflow.sklearn.log_model(
                 pipeline,
                 artifact_path="model",
                 signature=signature,
                 input_example=X_train.iloc[:5],
-                registered_model_name=self.config.full_model_name,
+                registered_model_name=model_registry_name,
             )
 
             run_id = run.info.run_id

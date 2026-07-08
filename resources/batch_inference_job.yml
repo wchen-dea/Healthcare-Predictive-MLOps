@@ -34,7 +34,7 @@ resources:
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
-            model_name: ${var.catalog}.${var.schema}.test_result_classifier
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier_batch
             model_alias: champion
             output_table: patient_predictions
       - task_key: data_quality_check

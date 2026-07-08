@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    stream_source_ingestion_job:
+      name: "Healthcare - Real-Time Source Ingestion"
+      description: "Continuously generates real-time feature rows and appends them into the streaming source table used by sepsis risk inference."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: stream-source-ingestion
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: source_ingestion_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: ${var.cluster_node_type}
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 4
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: Streaming
+      tasks:
+      - task_key: ingest_stream_source
+        description: "Feed real-time rows into silver_patients_features_stream_source"
+        job_cluster_key: source_ingestion_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/08_stream_source_ingestion
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            seed_table: synthetic_sepsis_seed_features
+            source_table: silver_patients_features_stream_source
+            rows_per_second: "5"
+            checkpoint_location: /tmp/${var.catalog}/${var.schema}/silver_patients_features_stream_source_checkpoint
+            trigger_processing_time: 30 seconds
+            available_now: "false"
+            await_termination_seconds: "0"
+      continuous:
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com

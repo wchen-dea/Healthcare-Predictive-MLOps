@@ -27,8 +27,9 @@ Raw CSV (Volume)
      ▼
 04_model_evaluation     → Promote to champion if accuracy ≥ 0.35
      │  (condition: model_registered == true)
-     ▼
-05_batch_inference      → Gold Delta table    (healthcare_catalog.healthcare_ml.patient_predictions)
+     ├──► 05_batch_inference      → Gold Delta table    (healthcare_catalog.healthcare_ml.patient_predictions)
+     │
+     └──► 07_streaming_inference  → Gold Delta table    (healthcare_catalog.healthcare_ml.patient_sepsis_risk_stream)
 ```
 
 ---
@@ -51,12 +52,20 @@ Raw CSV (Volume)
 │   ├── 03_model_training.py
 │   ├── 04_model_evaluation.py
 │   ├── 05_batch_inference.py
-│   └── 06_data_quality.py
+│   ├── 06_data_quality.py
+│   ├── 07_streaming_inference.py
+│   ├── 08_stream_source_ingestion.py
+│   ├── 09_seed_table_bootstrap.py
+│   └── 10_use_case_dual_algo_training.py
 ├── resources/
 │   ├── ml_pipeline_workflow.yml    # Full pipeline orchestration job
 │   ├── feature_engineering_job.yml
 │   ├── model_training_job.yml
-│   └── batch_inference_job.yml
+│   ├── use_case_model_training_job.yml
+│   ├── batch_inference_job.yml
+│   ├── streaming_inference_job.yml
+│   ├── stream_source_ingestion_job.yml
+│   └── seed_table_bootstrap_job.yml
 ├── scripts/
 │   └── upload_data.sh              # Upload raw CSV to Unity Catalog Volume
 ├── src/healthcare_mlops/
@@ -107,6 +116,12 @@ Per-environment overrides live in `environments/{dev,stg,prod}.yml`.
 | **Accuracy gate** | ≥ 0.75 (promotes to `champion` alias in Unity Catalog) |
 | **Hyperparameters** | `n_estimators=200`, `max_depth=10`, `learning_rate=0.05`, `subsample=0.8` |
 
+Use-case model strategy:
+
+- `test_result_classifier_batch`: trained with both `random_forest` and `gradient_boosting`.
+- `test_result_classifier_realtime`: trained with both `random_forest` and `gradient_boosting`.
+- Best version per use case is promoted to `champion` in its own model registry.
+
 > **Note on the dataset:** The bundled Kaggle Healthcare dataset has synthetically
 > random labels — `test_result` was assigned with no correlation to clinical features.
 > Expected accuracy is ~35–40%. The pipeline is designed to demonstrate the MLOps
@@ -153,12 +168,84 @@ make test                   # unit tests
 make test-cov               # tests with coverage report
 make validate[-dev/-stg/-prod]
 make deploy[-dev/-stg/-prod]
-make run[-pipeline/-feature-engineering/-training/-inference]
+make run[-pipeline/-feature-engineering/-training/-inference/-streaming-inference]
+make run-usecase-training
+make run-seed-bootstrap
+make run-stream-source-ingestion
 make upload-data            # upload data/ to Databricks Volume
 make destroy[-dev/-stg/-prod]   # tear down resources (prompts)
 make ci                     # full CI gate
 make cd-dev / cd-stg / cd-prod  # CI/CD deploy steps
 ```
+
+---
+
+## Streaming Inference Use Case (Early Sepsis Detection Pattern)
+
+A typical real-time ML use case in healthcare is early sepsis detection in ICUs
+and emergency departments. This project's streaming inference path is documented
+to follow that operational pattern.
+
+Background references:
+
+- Johns Hopkins Engineering for Professionals: [AI in healthcare applications and impact](https://ep.jhu.edu/news/ai-in-healthcare-applications-and-impact/)
+- KMS Technology: [machine learning applications in healthcare](https://kms-technology.com/blog/machine-learning-applications-in-healthcare/)
+
+How it works:
+
+- Continuous monitoring: a Structured Streaming query reads incoming feature
+           rows from a dedicated source table, `silver_patients_features_stream_source`.
+- Real-time analysis: each micro-batch is scored by a Random Forest champion model.
+- Automated alerting foundation: predictions are continuously written to Gold so
+     downstream systems can trigger clinician notifications for deterioration risk.
+
+Training and evaluation flow for this streaming use case:
+
+- Use `10_use_case_dual_algo_training.py` to train and evaluate both
+     `random_forest` and `gradient_boosting` for `test_result_classifier_batch`
+     and `test_result_classifier_realtime`.
+- The best model per use case is promoted to `champion`.
+
+Real-time source ingestion flow:
+
+- `09_seed_table_bootstrap.py` creates a synthetic seed table,
+  `synthetic_sepsis_seed_features`, with no dependency on Silver data.
+- `08_stream_source_ingestion.py` continuously writes simulated real-time rows
+     into `silver_patients_features_stream_source`.
+- `07_streaming_inference.py` consumes that source table and appends risk
+     predictions into the Gold output table.
+
+In this project, risk predictions are appended into:
+
+- `healthcare_catalog.healthcare_ml.patient_sepsis_risk_stream`
+
+Files added for this use case:
+
+- `notebooks/07_streaming_inference.py`
+- `notebooks/08_stream_source_ingestion.py`
+- `notebooks/09_seed_table_bootstrap.py`
+- `notebooks/10_use_case_dual_algo_training.py`
+- `resources/streaming_inference_job.yml`
+- `resources/stream_source_ingestion_job.yml`
+- `resources/seed_table_bootstrap_job.yml`
+- `resources/use_case_model_training_job.yml`
+
+Run it with:
+
+```bash
+make deploy-dev
+make run-usecase-training TARGET=dev
+make run-seed-bootstrap TARGET=dev
+make run-stream-source-ingestion TARGET=dev
+make run-streaming-inference TARGET=dev
+```
+
+By default, the job is configured as a Databricks **continuous** job and starts
+in `PAUSED` state, so you can explicitly enable it when ready.
+
+Impact framing: when deployed with clinically validated features and governance,
+this architecture supports earlier interventions (for example, rapid sepsis
+protocol initiation) by reducing time-to-detection of deterioration signals.
 
 Override `TARGET`, `CATALOG_NAME`, or `SCHEMA_NAME` inline:
 

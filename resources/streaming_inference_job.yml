@@ -1,0 +1,49 @@
+resources:
+  jobs:
+    sepsis_streaming_inference_job:
+      name: "Healthcare - Real-Time Sepsis Risk Inference"
+      description: "Implements an early-sepsis-detection streaming pattern by continuously scoring incoming Silver feature records and writing real-time risk predictions to Gold Delta."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: streaming-inference
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: streaming_inference_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: ${var.cluster_node_type}
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 6
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: Streaming
+      tasks:
+      - task_key: sepsis_streaming_predict
+        description: "Continuously score streaming records for early deterioration/sepsis-risk signals"
+        job_cluster_key: streaming_inference_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/07_streaming_inference
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            model_name: ${var.catalog}.${var.schema}.test_result_classifier_realtime
+            model_alias: champion
+            source_table: silver_patients_features_stream_source
+            output_table: patient_sepsis_risk_stream
+            checkpoint_location: /tmp/${var.catalog}/${var.schema}/patient_sepsis_risk_stream_checkpoint
+            trigger_processing_time: 1 minute
+            available_now: "false"
+            await_termination_seconds: "0"
+      continuous:
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com

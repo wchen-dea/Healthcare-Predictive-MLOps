@@ -14,7 +14,7 @@ schema = dbutils.widgets.get("schema")
 
 
 dbutils.widgets.text(
-    "model_name", "healthcare_catalog.healthcare_ml.test_result_classifier"
+    "model_name", "healthcare_catalog.healthcare_ml.test_result_classifier_batch"
 )
 dbutils.widgets.text("model_alias", "champion")
 dbutils.widgets.text("output_table", "patient_predictions")

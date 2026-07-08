@@ -20,12 +20,14 @@ dbutils.widgets.text(
 dbutils.widgets.text(
     "model_name", "healthcare_catalog.healthcare_ml.test_result_classifier"
 )
+dbutils.widgets.dropdown("model_algorithm", "random_forest", ["random_forest", "gradient_boosting"])
 dbutils.widgets.text("n_estimators", "200")
 dbutils.widgets.text("max_depth", "10")
 
 
 experiment_name = dbutils.widgets.get("experiment_name")
 model_name = dbutils.widgets.get("model_name")
+model_algorithm = dbutils.widgets.get("model_algorithm")
 n_estimators = int(dbutils.widgets.get("n_estimators"))
 max_depth = int(dbutils.widgets.get("max_depth"))
 
@@ -41,6 +43,7 @@ from healthcare_mlops.train import ModelTrainer
 config = HealthcareConfig(
     catalog=catalog,
     schema=schema,
+    model_algorithm=model_algorithm,
     n_estimators=n_estimators,
     max_depth=max_depth,
 )
@@ -53,7 +56,11 @@ print(f"Training on {silver_df.count()} rows")
 
 # COMMAND ----------
 
-run_id = trainer.train(silver_df, experiment_name)
+run_id = trainer.train(
+    silver_df,
+    experiment_name,
+    registered_model_name=model_name,
+)
 
 print(f"Training complete. MLflow run_id: {run_id}")
 

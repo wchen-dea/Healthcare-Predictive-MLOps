@@ -1,0 +1,42 @@
+resources:
+  jobs:
+    seed_table_bootstrap_job:
+      name: "Healthcare - Synthetic Seed Table Bootstrap"
+      description: "Generates a pure synthetic seed table for real-time stream-source ingestion demos."
+      tags:
+        project: healthcare-predictive-mlops
+        stage: seed-bootstrap
+        environment: ${bundle.target}
+      job_clusters:
+      - job_cluster_key: seed_bootstrap_cluster
+        new_cluster:
+          policy_id: ${var.policy_id}
+          apply_policy_default_values: true
+          aws_attributes:
+            instance_profile_arn: ${var.instance_profile_arn}
+            first_on_demand: 1
+          spark_version: 17.3.x-scala2.13
+          node_type_id: ${var.cluster_node_type}
+          data_security_mode: SINGLE_USER
+          autoscale:
+            min_workers: 1
+            max_workers: 2
+          custom_tags:
+            type: complex
+            Function: PDM
+            JobType: BATCH
+      tasks:
+      - task_key: bootstrap_synthetic_seed_table
+        description: "Create/update synthetic_sepsis_seed_features table"
+        job_cluster_key: seed_bootstrap_cluster
+        notebook_task:
+          notebook_path: ${workspace.file_path}/notebooks/09_seed_table_bootstrap
+          base_parameters:
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            output_table: synthetic_sepsis_seed_features
+            num_rows: "10000"
+            write_mode: overwrite
+      email_notifications:
+        on_failure:
+        - ${bundle.target}-alerts@example.com
