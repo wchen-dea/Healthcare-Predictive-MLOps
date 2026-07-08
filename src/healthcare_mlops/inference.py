@@ -2,8 +2,7 @@ import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.streaming import StreamingQuery
-from pyspark.sql.types import StringType
-from pyspark.sql.window import Window
+from pyspark.sql.types import LongType, StructField, StructType, StringType
 
 from healthcare_mlops.config import HealthcareConfig
 
@@ -147,13 +146,12 @@ class RealTimeSourceFeeder:
         if seed_df.limit(1).count() == 0:
             raise ValueError(f"Seed table '{full_seed}' is empty. Cannot generate stream.")
 
-        seeded = (
-            seed_df.withColumn(
-                "_stream_idx",
-                F.row_number().over(Window.orderBy(F.monotonically_increasing_id())) - 1,
-            )
-            .withColumn("_stream_idx", F.col("_stream_idx").cast("long"))
+        idx_schema = StructType(
+            [StructField("_stream_idx", LongType(), False)] + seed_df.schema.fields
         )
+        seeded = seed_df.rdd.zipWithIndex().map(
+            lambda x: (x[1],) + tuple(x[0])
+        ).toDF(idx_schema)
         seed_count = seeded.count()
 
         rate_df = self.spark.readStream.format("rate").option("rowsPerSecond", rows_per_second).load()
