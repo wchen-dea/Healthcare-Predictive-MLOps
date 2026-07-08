@@ -30,7 +30,7 @@ resources:
         description: "Create/update synthetic_sepsis_seed_features table"
         job_cluster_key: seed_bootstrap_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/09_seed_table_bootstrap
+          notebook_path: ${workspace.file_path}/notebooks/04_seed_table_bootstrap
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}

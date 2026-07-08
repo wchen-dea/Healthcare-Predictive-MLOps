@@ -30,14 +30,14 @@ resources:
         description: "Feed real-time rows into silver_patients_features_stream_source"
         job_cluster_key: source_ingestion_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/08_stream_source_ingestion
+          notebook_path: ${workspace.file_path}/notebooks/05_stream_source_ingestion
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
             seed_table: synthetic_sepsis_seed_features
             source_table: silver_patients_features_stream_source
             rows_per_second: "5"
-            checkpoint_location: /tmp/${var.catalog}/${var.schema}/silver_patients_features_stream_source_checkpoint
+            checkpoint_location: ${var.checkpoint_base_path}/silver_patients_features_stream_source
             trigger_processing_time: 30 seconds
             available_now: "false"
             await_termination_seconds: "0"

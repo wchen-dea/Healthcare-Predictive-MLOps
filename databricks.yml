@@ -33,6 +33,9 @@ variables:
   data_path:
     description: Path to the raw healthcare dataset CSV file
     default: /Volumes/healthcare_catalog/healthcare_ml/raw/healthcare_dataset.csv
+  checkpoint_base_path:
+    description: Base path for structured streaming checkpoints
+    default: /Volumes/healthcare_catalog/healthcare_ml/logs
   cluster_node_type:
     description: Worker node type for job clusters (AWS instance type)
     default: m5.large

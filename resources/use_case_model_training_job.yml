@@ -30,7 +30,7 @@ resources:
         description: "Train/evaluate Random Forest + Gradient Boosting for batch and realtime model registries"
         job_cluster_key: use_case_training_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/10_use_case_dual_algo_training
+          notebook_path: ${workspace.file_path}/notebooks/03_use_case_dual_algo_training
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}

@@ -20,6 +20,7 @@ dbutils.widgets.text("schema", "healthcare_ml")
 
 catalog = dbutils.widgets.get("catalog")
 schema = dbutils.widgets.get("schema")
+default_checkpoint = f"/Volumes/{catalog}/{schema}/logs/patient_sepsis_risk_stream"
 
 dbutils.widgets.text(
     "model_name", "healthcare_catalog.healthcare_ml.test_result_classifier_realtime"
@@ -29,7 +30,7 @@ dbutils.widgets.text("source_table", "silver_patients_features_stream_source")
 dbutils.widgets.text("output_table", "patient_sepsis_risk_stream")
 dbutils.widgets.text(
     "checkpoint_location",
-    "/tmp/healthcare_catalog/healthcare_ml/patient_sepsis_risk_stream_checkpoint",
+    default_checkpoint,
 )
 dbutils.widgets.text("trigger_processing_time", "1 minute")
 dbutils.widgets.dropdown("available_now", "false", ["true", "false"])

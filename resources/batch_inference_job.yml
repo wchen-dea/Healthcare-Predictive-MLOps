@@ -30,7 +30,7 @@ resources:
         description: "Score new patient records with the champion model"
         job_cluster_key: inference_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/05_batch_inference
+          notebook_path: ${workspace.file_path}/notebooks/07_batch_inference
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
@@ -43,7 +43,7 @@ resources:
         - task_key: batch_predict
         job_cluster_key: inference_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/06_data_quality
+          notebook_path: ${workspace.file_path}/notebooks/08_data_quality
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}

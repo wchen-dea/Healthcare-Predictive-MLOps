@@ -30,7 +30,7 @@ resources:
         description: "Continuously score streaming records for early deterioration/sepsis-risk signals"
         job_cluster_key: streaming_inference_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/07_streaming_inference
+          notebook_path: ${workspace.file_path}/notebooks/06_streaming_inference
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
@@ -38,7 +38,7 @@ resources:
             model_alias: champion
             source_table: silver_patients_features_stream_source
             output_table: patient_sepsis_risk_stream
-            checkpoint_location: /tmp/${var.catalog}/${var.schema}/patient_sepsis_risk_stream_checkpoint
+            checkpoint_location: ${var.checkpoint_base_path}/patient_sepsis_risk_stream
             trigger_processing_time: 1 minute
             available_now: "false"
             await_termination_seconds: "0"

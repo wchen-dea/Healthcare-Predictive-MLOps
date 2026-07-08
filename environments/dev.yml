@@ -15,6 +15,7 @@ targets:
       catalog: quickstart_catalog
       schema: healthcare_ml
       data_path: /Volumes/quickstart_catalog/healthcare_ml/raw/healthcare_dataset.csv
+      checkpoint_base_path: /Volumes/quickstart_catalog/healthcare_ml/logs
       instance_profile_arn: arn:aws:iam::837259729388:instance-profile/dt-role-us-west-2-databricks-instance-profile-role-dev
       job_cluster_name: job_cluster_mlops_dev
       notification_email: paul.chen@discounttire.com

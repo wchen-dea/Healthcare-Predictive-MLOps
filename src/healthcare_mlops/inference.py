@@ -94,7 +94,7 @@ class StreamingPredictor:
 
         if not checkpoint_location:
             checkpoint_location = (
-                f"/tmp/{self.config.catalog}/{self.config.schema}/{output_table}_checkpoint"
+                f"/Volumes/{self.config.catalog}/{self.config.schema}/logs/{output_table}"
             )
 
         stream_df = self.spark.readStream.table(full_source)
@@ -140,7 +140,7 @@ class RealTimeSourceFeeder:
 
         if not checkpoint_location:
             checkpoint_location = (
-                f"/tmp/{self.config.catalog}/{self.config.schema}/{source_table}_checkpoint"
+                f"/Volumes/{self.config.catalog}/{self.config.schema}/logs/{source_table}"
             )
 
         seed_df = self.spark.read.table(full_seed)

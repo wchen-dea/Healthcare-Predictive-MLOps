@@ -30,7 +30,7 @@ resources:
         description: "Train RandomForest classifier and log to MLflow"
         job_cluster_key: training_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/03_model_training
+          notebook_path: ${workspace.file_path}/notebooks/09_model_training
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
@@ -44,7 +44,7 @@ resources:
         - task_key: train_model
         job_cluster_key: training_cluster
         notebook_task:
-          notebook_path: ${workspace.file_path}/notebooks/04_model_evaluation
+          notebook_path: ${workspace.file_path}/notebooks/10_model_evaluation
           base_parameters:
             catalog: ${var.catalog}
             schema: ${var.schema}
