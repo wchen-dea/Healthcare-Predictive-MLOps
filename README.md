@@ -1,11 +1,17 @@
 # Healthcare Predictive MLOps
 
-> **⚠️ Trial Project** - For evaluation and demonstration purposes only.  
-> Not licensed for production use, redistribution, or commercial deployment.  
-> © 2026 wchen-dea. All rights reserved.
 
 End-to-end MLOps implementation on Databricks for classifying patient test results
 (Normal / Abnormal / Inconclusive), with both batch and real-time inference paths.
+
+In the healthcare industry, **Real-Time ML** processes live, streaming patient data to deliver
+instant predictions with sub-second latency, driving critical care and immediate clinical
+decisions. Conversely, **Batch ML** ingests and computes massive volumes of historical data on
+scheduled cycles (e.g., daily or weekly), prioritizing large-scale efficiency for strategic
+insights.
+
+The integration of both methodologies is fundamentally changing patient outcomes and hospital
+operations.
 
 The real-time inference path is designed as an operational streaming system for
 early deterioration and sepsis-risk monitoring patterns, where new feature rows
@@ -217,21 +223,79 @@ make cd-dev / cd-stg / cd-prod
 
 ---
 
-## Realtime Sepsis Pattern
+## Use Case Paths
 
-This repository models a realtime healthcare pattern for early sepsis-risk monitoring:
+### ⏱️ Real-Time ML Path
+
+Real-Time ML focuses on clinical safety, immediate intervention, and continuous monitoring. It
+analyzes data as it is generated (within milliseconds to seconds) to deliver point-of-care
+predictions.
+
+- **Sepsis and Deterioration Prediction:** Continuously processes real-time vital signs from
+  wearable devices or bedside monitors (e.g., via platforms like [Apache Flink](https://flink.apache.org/)
+  or [Apache Spark](https://spark.apache.org/)) to alert nurses and doctors before a patient
+  experiences life-threatening organ failure.
+- **Hospital Capacity Optimization:** Predicts live emergency department inflows, unit-level
+  patient occupancy, and bed turnover using streaming data architectures to prevent overcrowding.
+- **Critical Care Alerting:** Evaluates temporal Electronic Health Records (EHR) using Fast
+  Healthcare Interoperability Resources ([FHIR APIs](https://hl7.org/fhir/overview.html)) to
+  surface immediate patient risk scores in emergency settings.
+
+This project implements the real-time path as an operational streaming system for early
+deterioration and sepsis-risk monitoring:
 
 - Seed bootstrap (`04_seed_table_bootstrap.py`)
 - Stream source generation (`05_stream_source_ingestion.py`)
 - Streaming scoring (`06_streaming_inference.py`)
 
-Scoring uses the realtime use-case champion model:
+Scoring uses: `${catalog}.${schema}.test_result_classifier_realtime@champion`  
+Output table: `${catalog}.${schema}.patient_sepsis_risk_stream`
 
-- `${catalog}.${schema}.test_result_classifier_realtime@champion`
+### 📦 Batch ML Path
 
-Output table:
+Batch ML is relied upon when processing enormous, complex, or unstructured datasets where a
+slight delay is acceptable, but absolute accuracy, thoroughness, and cost-efficiency are
+critical.
 
-- `${catalog}.${schema}.patient_sepsis_risk_stream`
+- **Medical Imaging and Diagnostics:** Processes large batches of MRI, CT scan, and mammogram
+  datasets during scheduled intervals, enabling radiologists to identify complex patterns such
+  as tumors difficult for the human eye to detect.
+- **Predictive Risk Modeling & Outreach:** Analyzes massive EHR archives to generate monthly or
+  weekly predictive risk scores (e.g., readmission probability, appointment no-show risk) to
+  help staff plan proactive outreach.
+- **Genomics and Precision Medicine:** Conducts large-scale genomic sequencing and
+  bioinformatics analysis to identify genetic markers — computationally intensive workloads
+  that are cost-prohibitive to run in real time.
+
+This project implements the batch path for scheduled patient test result classification:
+
+- Feature engineering (`02_feature_engineering.py`)
+- Dual-algorithm model training (`03_use_case_dual_algo_training.py`)
+- Batch scoring (`07_batch_inference.py`)
+
+Scoring uses: `${catalog}.${schema}.test_result_classifier_batch@champion`  
+Output table: `${catalog}.${schema}.patient_predictions`
+
+### ⚖️ Technical Trade-Offs
+
+| Feature | Real-Time ML | Batch ML |
+|---|---|---|
+| **Latency** | Milliseconds to seconds | Hours, days, or weeks |
+| **Data Flow** | Continuous streams from unbounded data sources | Stored or historical finite data at rest |
+| **Infrastructure** | Complex, always-on architecture (e.g., Kafka) | Simpler, scheduled workflows (e.g., Airflow) |
+| **Cost** | Higher operational compute costs | Highly cost-efficient |
+
+### 🔄 Hybrid Approach
+
+Many modern health systems employ a **hybrid architecture** (often combining
+[Lambda or Kappa architectures](https://hazelcast.com/blog/from-batch-machine-learning-to-real-time-machine-learning/)).
+Batch ML is utilized for deep-dive historical analysis and training complex foundational models
+offline. These pre-trained models are then deployed to serve real-time predictions to clinical
+staff.
+
+This project mirrors that hybrid approach: models are trained offline in batch mode and
+promoted to a `champion` alias, then served by the streaming inference path for real-time
+clinical scoring.
 
 Background references:
 
